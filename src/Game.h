@@ -42,18 +42,18 @@ public:
 		}
 	}
 	
-	long size() const {
+	inline long size() const {
 		return size_;
 	}
 	
-	char& cell(long i, long j){
+	inline char& cell(long i, long j){
 		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
-	const char& cell(long i, long j) const {
+	inline const char& cell(long i, long j) const {
 		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
 	
-	char& cellTmp(long i, long j){
+	inline char& cellTmp(long i, long j){
 		return temp_[(i+1)*sizeMem_ + (j+1)];
 	}
 	
@@ -69,37 +69,17 @@ public:
 		cout << flush;
 	}
 
-	void nextGen()
+	inline void nextGen()
 	{
-		
-		// blocking
-		/*
-		long blockSZ = 80;
-
-		for( long ib = 0; ib < size_; ib += blockSZ ){
-		long max_i = std::min(ib + blockSZ, size_);
-		for( long jb = 0; jb < size_; jb += blockSZ ){
-		long max_j = std::min(jb + blockSZ, size_);
-			for( long i = ib; i < max_i; ++i )
-			for( long j = jb; j < max_j; ++j )
-			{
-			do_something(i,j);
-			}
-		}
-		}
-		*/
-		
 		for(long i = 0; i < size_; ++i)
 		{
 			for(long j = 0; j < size_; ++j)
 			{
 				if(cell(i,j)==LIVE)
 				{
-					if(neighbours(i,j)<2)
-					{
-						cellTmp(i,j) = DEAD;
-					}
-					else if(neighbours(i,j)>3)
+					int neib = neighbours(i,j);
+					
+					if(neib < 2 || neib > 3)
 					{
 						cellTmp(i,j) = DEAD;
 					}
@@ -110,7 +90,7 @@ public:
 				}
 				else
 				{
-					if(neighbours(i,j)==3)
+					if(neib == 3)
 					{
 						cellTmp(i,j) = LIVE;
 					}
@@ -124,8 +104,50 @@ public:
 		
 		grid_.swap(temp_);
 	}
+	
+	// With Blocking
+	inline void nextGenB()
+	{
+		long blockSZ = 24;
+		
+		#pragma omp parallel for schedule(static)
+		for( long ib = 0; ib < size_; ib += blockSZ ){
+		long max_i = std::min(ib + blockSZ, size_);
+		for( long jb = 0; jb < size_; jb += blockSZ ){
+		long max_j = std::min(jb + blockSZ, size_);
+		
+			for( long i = ib; i < max_i; ++i )
+			for( long j = jb; j < max_j; ++j )
+			{
+				int neib = neighbours(i,j);
+				
+				if(cell(i,j) == LIVE)
+				{
+					if(neib < 2 || neib > 3)
+					{
+						cellTmp(i,j) = DEAD;
+					} else {
+						cellTmp(i,j) = LIVE;
+					}
+				}
+				else
+				{
+					if(neib == 3)
+					{
+						cellTmp(i,j) = LIVE;
+					} else {
+						cellTmp(i,j) = DEAD;
+					}
+				}
+			}
+			
+		}
+		}
+			
+		grid_.swap(temp_);
+	}
 
-	int neighbours(long x, long y) const
+	inline int neighbours(long x, long y) const
 	{
 		int count = 0;
 		
