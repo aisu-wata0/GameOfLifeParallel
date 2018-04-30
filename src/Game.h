@@ -19,6 +19,7 @@ class Game
 {
 private:
 	long size_;
+	long sizeMem_;
 	vector<char> grid_;
 	vector<char> temp_;
 	
@@ -27,11 +28,13 @@ public:
 	Game(long size)
 	{
 		size_ = size;
-		grid_.reserve(size_*size_);
-		temp_.reserve(size_*size_);
+		sizeMem_ = size_ + 2;
 		
-		for(long i = 0; i < size_; ++i){
-			for(long j = 0; j < size_; ++j)
+		grid_.reserve(sizeMem_*sizeMem_);
+		temp_.reserve(sizeMem_*sizeMem_);
+		
+		for(long i = 0; i < sizeMem_; ++i){
+			for(long j = 0; j < sizeMem_; ++j)
 			{
 				grid_.push_back(DEAD);
 				temp_.push_back(DEAD);
@@ -44,14 +47,14 @@ public:
 	}
 	
 	char& cell(long i, long j){
-		return grid_[i*size_ + j];
+		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
 	const char& cell(long i, long j) const {
-		return grid_[i*size_ + j];
+		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
 	
 	char& cellTmp(long i, long j){
-		return temp_[i*size_ + j];
+		return temp_[(i+1)*sizeMem_ + (j+1)];
 	}
 	
 	void print() const
@@ -68,9 +71,27 @@ public:
 
 	void nextGen()
 	{
-		for(long i = 1; i < size_-1; ++i)
+		
+		// blocking
+		/*
+		long blockSZ = 80;
+
+		for( long ib = 0; ib < size_; ib += blockSZ ){
+		long max_i = std::min(ib + blockSZ, size_);
+		for( long jb = 0; jb < size_; jb += blockSZ ){
+		long max_j = std::min(jb + blockSZ, size_);
+			for( long i = ib; i < max_i; ++i )
+			for( long j = jb; j < max_j; ++j )
+			{
+			do_something(i,j);
+			}
+		}
+		}
+		*/
+		
+		for(long i = 0; i < size_; ++i)
 		{
-			for(long j = 1; j < size_-1; ++j)
+			for(long j = 0; j < size_; ++j)
 			{
 				if(cell(i,j)==LIVE)
 				{
