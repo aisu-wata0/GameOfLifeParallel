@@ -16,10 +16,10 @@ int main()
 	
 	g.init("Glider gun");
 	
-	for(long i = 0; i < 1000 ; ++i)
+	for(long i = 0; i < 400 ; ++i)
 	{
 		/*g.print();*/
-		g.nextGen();
+		g.nextGenB();
 		
 		/*
 		ostringstream flushStream;
