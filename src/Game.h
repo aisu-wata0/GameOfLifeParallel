@@ -68,9 +68,9 @@ public:
 
 	void nextGen()
 	{
-		for(long i = 0; i < size_; ++i)
+		for(long i = 0; i < size_-1; ++i)
 		{
-			for(long j = 0; j < size_; ++j)
+			for(long j = 0; j < size_-1; ++j)
 			{
 				if(cell(i,j)==LIVE)
 				{

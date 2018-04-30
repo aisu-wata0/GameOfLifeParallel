@@ -12,19 +12,20 @@ using namespace G;
 
 int main()
 {
-	Game g(40);
+	Game g(2048);
 	
-	g.init("Glider");
+	g.init("Glider gun");
 	
-	usleep(1000000);
-	
-	for(long i = 0; true ; ++i)
+	for(long i = 0; i < 100 ; ++i)
 	{
-		g.print();
+		/*g.print();*/
 		g.nextGen();
 		
+		/*
 		ostringstream flushStream;
 		flushStream << "\r\x1b[" << g.size() << "A";
+		*/
+
 		//flushStream << "\r\x1bH";
 		// \r - reset the poition to the beginning of the next line
 		// \x1b - ESC
@@ -33,8 +34,9 @@ int main()
 		// 	[numberC - move cursor right number chars
 		// 	[numberD - move cursor left number chars
 		// 	H - upper left corner
-		cout << flushStream.str() << flush;
-		usleep(75000);
+		
+		/*cout << flushStream.str() << flush;
+		usleep(75000);*/
 	}
 
 	return(0);
