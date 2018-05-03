@@ -6,12 +6,27 @@
 #include<string>
 #include<sstream>
 
+#ifdef LIKWID_PERFMON
+	#include <likwid.h>
+#else
+	#define LIKWID_MARKER_INIT
+	#define LIKWID_MARKER_THREADINIT
+	#define LIKWID_MARKER_SWITCH
+	#define LIKWID_MARKER_REGISTER(regionTag)
+	#define LIKWID_MARKER_START(regionTag)
+	#define LIKWID_MARKER_STOP(regionTag)
+	#define LIKWID_MARKER_CLOSE
+	#define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
+#endif
+
 #include "Game.h"
 
 using namespace G;
 
 int main()
 {
+LIKWID_MARKER_INIT;
+	
 	Game g(2048);
 	
 	g.init("Glider gun");
@@ -20,7 +35,6 @@ int main()
 	{
 		/*g.print();*/
 		g.nextGenB();
-		
 		/*
 		ostringstream flushStream;
 		flushStream << "\r\x1b[" << g.size() << "A";
@@ -39,5 +53,6 @@ int main()
 		usleep(75000);*/
 	}
 
+LIKWID_MARKER_CLOSE;
 	return(0);
 }
