@@ -8,12 +8,28 @@
 #include<string>
 #include<sstream>
 
+#ifdef LIKWID_PERFMON
+	#include <likwid.h>
+#else
+	#define LIKWID_MARKER_INIT
+	#define LIKWID_MARKER_THREADINIT
+	#define LIKWID_MARKER_SWITCH
+	#define LIKWID_MARKER_REGISTER(regionTag)
+	#define LIKWID_MARKER_START(regionTag)
+	#define LIKWID_MARKER_STOP(regionTag)
+	#define LIKWID_MARKER_CLOSE
+	#define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
+#endif
+
 namespace G {
 
 using namespace std;
 
-#define LIVE 'O'
-#define DEAD '.'
+#define LIVE 1
+#define DEAD 0
+
+#define LIVE_CHAR 'O'
+#define DEAD_CHAR '.'
 
 class Game
 {
@@ -22,9 +38,9 @@ private:
 	long sizeMem_;
 	vector<char> grid_;
 	vector<char> temp_;
-	
+
 public:
-	
+
 	Game(long size)
 	{
 		size_ = size;
@@ -41,22 +57,22 @@ public:
 			}
 		}
 	}
-	
+
 	inline long size() const {
 		return size_;
 	}
-	
+
 	inline char& cell(long i, long j){
 		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
 	inline const char& cell(long i, long j) const {
 		return grid_[(i+1)*sizeMem_ + (j+1)];
 	}
-	
+
 	inline char& cellTmp(long i, long j){
 		return temp_[(i+1)*sizeMem_ + (j+1)];
 	}
-	
+
 	void print() const
 	{
 		for(long i = 0; i < size_; ++i){
@@ -69,52 +85,74 @@ public:
 		cout << flush;
 	}
 
+
 	inline void nextGen()
 	{
+		
+// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
+#pragma omp parallel
+{ LIKWID_MARKER_THREADINIT; }
+
+#pragma omp parallel
+{
+LIKWID_MARKER_START("Parallel");
+		
+		#pragma omp for schedule(static)
 		for(long i = 0; i < size_; ++i)
 		{
 			for(long j = 0; j < size_; ++j)
 			{
-				if(cell(i,j)==LIVE)
+				int neib = neighbours(i,j);
+				
+				if(cell(i,j) == LIVE)
 				{
-					int neib = neighbours(i,j);
-					
 					if(neib < 2 || neib > 3)
 					{
 						cellTmp(i,j) = DEAD;
-					}
-					else
-					{
+					} else {
 						cellTmp(i,j) = LIVE;
 					}
 				}
-				else
+				else // if cell(i,j) == DEAD
 				{
-					if(neib == 3)
-					{
+					if(neib == 3) {
 						cellTmp(i,j) = LIVE;
-					}
-					else
-					{
+					} else {
 						cellTmp(i,j) = DEAD;
 					}
 				}
 			}
 		}
 		
+LIKWID_MARKER_STOP("Parallel");
+}
+		
+LIKWID_MARKER_START("SEQUENTIAL");
+		
 		grid_.swap(temp_);
+		
+LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
-	
+
+
 	// With Blocking
 	inline void nextGenB()
 	{
 		long blockSZ = 24;
 		
-		#pragma omp parallel for schedule(static)
+// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
+#pragma omp parallel
+{ LIKWID_MARKER_THREADINIT; } 
+		
+#pragma omp parallel
+{
+LIKWID_MARKER_START("Parallel");
+		
+		#pragma omp for schedule(static)
 		for( long ib = 0; ib < size_; ib += blockSZ ){
-		long max_i = std::min(ib + blockSZ, size_);
+		long max_i = min(ib + blockSZ, size_);
 		for( long jb = 0; jb < size_; jb += blockSZ ){
-		long max_j = std::min(jb + blockSZ, size_);
+		long max_j = min(jb + blockSZ, size_);
 		
 			for( long i = ib; i < max_i; ++i )
 			for( long j = jb; j < max_j; ++j )
@@ -130,10 +168,9 @@ public:
 						cellTmp(i,j) = LIVE;
 					}
 				}
-				else
+				else // if cell(i,j) == DEAD
 				{
-					if(neib == 3)
-					{
+					if(neib == 3) {
 						cellTmp(i,j) = LIVE;
 					} else {
 						cellTmp(i,j) = DEAD;
@@ -143,39 +180,29 @@ public:
 			
 		}
 		}
-			
+LIKWID_MARKER_STOP("Parallel");
+}
+		
+LIKWID_MARKER_START("SEQUENTIAL");
+		
 		grid_.swap(temp_);
+		
+LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 
 	inline int neighbours(long x, long y) const
 	{
 		int count = 0;
 		
-		if(cell(x-1,y-1) == LIVE){
-			++count;
-		}
-		if(cell(x-1,y) == LIVE){
-			++count;
-		}
-		if(cell(x-1,y+1) == LIVE){
-			++count;
-		}
-		if(cell(x,y-1) == LIVE){
-			++count;
-		}
-		if(cell(x,y+1) == LIVE){
-			++count;
-		}
-		if(cell(x+1,y-1) == LIVE){
-			++count;
-		}
-		if(cell(x+1,y) == LIVE){
-			++count;
-		}
-		if(cell(x+1,y+1) == LIVE){
-			++count;
-		}
-
+		count += cell(x-1,y-1);
+		count += cell(x-1,y);
+		count += cell(x-1,y+1);
+		count += cell(x,y-1);
+		count += cell(x,y+1);
+		count += cell(x+1,y-1);
+		count += cell(x+1,y);
+		count += cell(x+1,y+1);
+		
 		return(count);
 	}
 	
