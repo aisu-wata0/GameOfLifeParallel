@@ -5,6 +5,7 @@
 #include<vector>
 #include<string>
 #include<sstream>
+#include <omp.h>
 
 #ifdef LIKWID_PERFMON
 	#include <likwid.h>
@@ -28,7 +29,9 @@ int main()
 LIKWID_MARKER_INIT;
 	
 	Game g(2048);
-	
+#ifdef LIKWID_PERFMON
+	printf("Likiwid\n");
+#endif
 	g.init("Glider gun");
 	
 	for(long i = 0; i < 400 ; ++i)

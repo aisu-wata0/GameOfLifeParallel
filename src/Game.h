@@ -1,12 +1,14 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include<iostream>
-#include<unistd.h>
-#include<stdlib.h>
-#include<vector>
-#include<string>
-#include<sstream>
+#include <iostream>
+#include <unistd.h>
+#include <stdlib.h>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <omp.h>
+
 
 #ifdef LIKWID_PERFMON
 	#include <likwid.h>
