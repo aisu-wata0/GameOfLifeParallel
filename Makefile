@@ -4,7 +4,7 @@ CC = g++ -std=c++11
 EXT := cpp
 HEXT := hpp
 # Executable filename
-bin = invmat
+bin = GOL
 # warnings and flags
 RELEASEFLAGS = -O3 -mavx -march=native -DNDEBUG
 DEBUGFLAGS = -O0 -g
@@ -18,7 +18,7 @@ LIKDIR3=/usr/include/likwid
 LIKDIR4=/usr/include
 INC := -I./include -I./Grimoire/include -I$(LIKDIR)/include  -I$(LIKDIR)/include -L$(LIKDIR1)/lib -I$(LIKDIR2)/include -L$(LIKDIR2)/lib -I$(LIKDIR3)/include -L$(LIKDIR3)/lib -I$(LIKDIR4)/include -L$(LIKDIR4)/lib
 
-LIB := -pthread -fopenmp  -L lib -DLIKWID_PERFMON -lm -pthread -llikwid
+LIB := -pthread -L lib -DLIKWID_PERFMON -lm -pthread -llikwid -fopenmp
 
 SRCDIR = src
 INCDIR = include

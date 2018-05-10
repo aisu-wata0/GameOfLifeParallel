@@ -24,25 +24,25 @@
 
 using namespace G;
 
-int main()
+int main(int argc, char **argv)
 {
-	omp_set_num_threads(1);
-	
-	LIKWID_MARKER_INIT;	
+	omp_set_num_threads(4);
 // Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
 #pragma omp parallel
 {
 	LIKWID_MARKER_THREADINIT;
 }
+	
+	LIKWID_MARKER_INIT;	
 
 	srand(0);
 	
-	Game g(2048);
+	Game g(atoi(argv[1]));
 	
 	//g.init("Glider gun");
 	g.init(0.25);
 	
-	for(long i = 0; i < 400 ; ++i)
+	for(long i = 0; i < 777 ; ++i)
 	{
 		/*g.print();*/
 		g.nextGenB();

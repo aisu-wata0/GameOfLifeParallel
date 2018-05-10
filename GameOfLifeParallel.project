@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Project Name="GameOfLifeParallel" InternalType="Console" Version="10.0.0">
   <Plugins>
+    <Plugin Name="qmake">
+      <![CDATA[00010001N0007Release000000000000]]>
+    </Plugin>
     <Plugin Name="CMakePlugin">
       <![CDATA[[{
   "name": "Debug",
@@ -22,15 +25,13 @@
   "parentProject": ""
  }]]]>
     </Plugin>
-    <Plugin Name="qmake">
-      <![CDATA[00010001N0007Release000000000000]]>
-    </Plugin>
   </Plugins>
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
     <File Name="src/Game.h"/>
     <File Name="src/main.cpp"/>
+    <File Name="src/Block.hpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="root">
     <File Name=".gitignore"/>
