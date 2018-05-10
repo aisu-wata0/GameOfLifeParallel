@@ -26,13 +26,21 @@ using namespace G;
 
 int main()
 {
-LIKWID_MARKER_INIT;
+	omp_set_num_threads(1);
+	
+	LIKWID_MARKER_INIT;	
+// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
+#pragma omp parallel
+{
+	LIKWID_MARKER_THREADINIT;
+}
+
+	srand(0);
 	
 	Game g(2048);
-#ifdef LIKWID_PERFMON
-	printf("Likiwid\n");
-#endif
-	g.init("Glider gun");
+	
+	//g.init("Glider gun");
+	g.init(0.25);
 	
 	for(long i = 0; i < 400 ; ++i)
 	{

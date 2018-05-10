@@ -8,6 +8,8 @@
 #include <string>
 #include <sstream>
 #include <omp.h>
+#include <ctime>
+#include <cstdlib>
 
 
 #ifdef LIKWID_PERFMON
@@ -45,6 +47,8 @@ public:
 
 	Game(long size)
 	{
+LIKWID_MARKER_START("SEQUENTIAL");
+
 		size_ = size;
 		sizeMem_ = size_ + 2;
 		
@@ -58,6 +62,8 @@ public:
 				temp_.push_back(DEAD);
 			}
 		}
+		
+LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 
 	inline long size() const {
@@ -90,10 +96,6 @@ public:
 
 	inline void nextGen()
 	{
-		
-// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
-#pragma omp parallel
-{ LIKWID_MARKER_THREADINIT; }
 
 #pragma omp parallel
 {
@@ -141,10 +143,6 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 	inline void nextGenB()
 	{
 		long blockSZ = 24;
-		
-// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
-#pragma omp parallel
-{ LIKWID_MARKER_THREADINIT; } 
 		
 #pragma omp parallel
 {
@@ -208,8 +206,34 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 		return(count);
 	}
 	
+	
+	void init(double chanceAlive){
+	
+#pragma omp parallel
+{
+LIKWID_MARKER_START("Parallel");
+		
+		#pragma omp for schedule(static)
+		for(long i = 0; i < size_; ++i)
+		{
+			for(long j = 0; j < size_; ++j)
+			{
+				double val = (double)rand() / RAND_MAX;
+				if (val < chanceAlive)
+					cell(i,j) = LIVE;
+				else
+					cell(i,j) = DEAD;
+			}
+		}
+
+LIKWID_MARKER_STOP("Parallel");
+}
+	}
+	
 	void init(string s)
 	{
+LIKWID_MARKER_START("SEQUENTIAL");
+		
 		if(s == "Glider"){
 			cell(0,1) = LIVE;
 			cell(1,2) = LIVE;
@@ -310,6 +334,8 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 			cell(3,36) = LIVE;
 			cell(4,36) = LIVE;
 		}
+		
+LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 };
 
