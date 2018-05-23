@@ -1,5 +1,4 @@
-#ifndef GAME_H
-#define GAME_H
+#pragma once
 
 #include <iostream>
 #include <unistd.h>
@@ -12,18 +11,7 @@
 #include <cstdlib>
 
 
-#ifdef LIKWID_PERFMON
-	#include <likwid.h>
-#else
-	#define LIKWID_MARKER_INIT
-	#define LIKWID_MARKER_THREADINIT
-	#define LIKWID_MARKER_SWITCH
-	#define LIKWID_MARKER_REGISTER(regionTag)
-	#define LIKWID_MARKER_START(regionTag)
-	#define LIKWID_MARKER_STOP(regionTag)
-	#define LIKWID_MARKER_CLOSE
-	#define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
-#endif
+#include "Block.hpp"
 
 namespace G {
 
@@ -51,10 +39,10 @@ LIKWID_MARKER_START("SEQUENTIAL");
 
 		size_ = size;
 		sizeMem_ = size_ + 2;
-		
+
 		grid_.reserve(sizeMem_*sizeMem_);
 		temp_.reserve(sizeMem_*sizeMem_);
-		
+
 		for(long i = 0; i < sizeMem_; ++i){
 			for(long j = 0; j < sizeMem_; ++j)
 			{
@@ -62,7 +50,7 @@ LIKWID_MARKER_START("SEQUENTIAL");
 				temp_.push_back(DEAD);
 			}
 		}
-		
+
 LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 
@@ -100,14 +88,14 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 #pragma omp parallel
 {
 LIKWID_MARKER_START("Parallel");
-		
+
 		#pragma omp for schedule(static)
 		for(long i = 0; i < size_; ++i)
 		{
 			for(long j = 0; j < size_; ++j)
 			{
 				int neib = neighbours(i,j);
-				
+
 				if(cell(i,j) == LIVE)
 				{
 					if(neib < 2 || neib > 3)
@@ -127,14 +115,14 @@ LIKWID_MARKER_START("Parallel");
 				}
 			}
 		}
-		
+
 LIKWID_MARKER_STOP("Parallel");
 }
-		
+
 LIKWID_MARKER_START("SEQUENTIAL");
-		
+
 		grid_.swap(temp_);
-		
+
 LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 
@@ -143,22 +131,22 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 	inline void nextGenB()
 	{
 		long blockSZ = 24;
-		
+
 #pragma omp parallel
 {
 LIKWID_MARKER_START("Parallel");
-		
+
 		#pragma omp for schedule(static)
 		for( long ib = 0; ib < size_; ib += blockSZ ){
 		long max_i = min(ib + blockSZ, size_);
 		for( long jb = 0; jb < size_; jb += blockSZ ){
 		long max_j = min(jb + blockSZ, size_);
-		
+
 			for( long i = ib; i < max_i; ++i )
 			for( long j = jb; j < max_j; ++j )
 			{
 				int neib = neighbours(i,j);
-				
+
 				if(cell(i,j) == LIVE)
 				{
 					if(neib < 2 || neib > 3)
@@ -177,23 +165,23 @@ LIKWID_MARKER_START("Parallel");
 					}
 				}
 			}
-			
+
 		}
 		}
 LIKWID_MARKER_STOP("Parallel");
 }
-		
+
 LIKWID_MARKER_START("SEQUENTIAL");
-		
+
 		grid_.swap(temp_);
-		
+
 LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 
 	inline int neighbours(long x, long y) const
 	{
 		int count = 0;
-		
+
 		count += cell(x-1,y-1);
 		count += cell(x-1,y);
 		count += cell(x-1,y+1);
@@ -202,17 +190,17 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 		count += cell(x+1,y-1);
 		count += cell(x+1,y);
 		count += cell(x+1,y+1);
-		
+
 		return(count);
 	}
-	
-	
+
+
 	void init(double chanceAlive){
-	
+
 #pragma omp parallel
 {
 LIKWID_MARKER_START("Parallel");
-		
+
 		#pragma omp for schedule(static)
 		for(long i = 0; i < size_; ++i)
 		{
@@ -229,11 +217,11 @@ LIKWID_MARKER_START("Parallel");
 LIKWID_MARKER_STOP("Parallel");
 }
 	}
-	
+
 	void init(string s)
 	{
 LIKWID_MARKER_START("SEQUENTIAL");
-		
+
 		if(s == "Glider"){
 			cell(0,1) = LIVE;
 			cell(1,2) = LIVE;
@@ -334,10 +322,9 @@ LIKWID_MARKER_START("SEQUENTIAL");
 			cell(3,36) = LIVE;
 			cell(4,36) = LIVE;
 		}
-		
+
 LIKWID_MARKER_STOP("SEQUENTIAL");
 	}
 };
 
 }
-#endif // GAME_H

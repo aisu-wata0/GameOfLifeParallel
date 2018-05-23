@@ -1,26 +1,5 @@
 
-#include<iostream>
-#include<unistd.h>
-#include<stdlib.h>
-#include<vector>
-#include<string>
-#include<sstream>
-#include <omp.h>
-
-#ifdef LIKWID_PERFMON
-	#include <likwid.h>
-#else
-	#define LIKWID_MARKER_INIT
-	#define LIKWID_MARKER_THREADINIT
-	#define LIKWID_MARKER_SWITCH
-	#define LIKWID_MARKER_REGISTER(regionTag)
-	#define LIKWID_MARKER_START(regionTag)
-	#define LIKWID_MARKER_STOP(regionTag)
-	#define LIKWID_MARKER_CLOSE
-	#define LIKWID_MARKER_GET(regionTag, nevents, events, time, count)
-#endif
-
-#include "Game.h"
+#include "main.hpp"
 
 using namespace G;
 
@@ -32,16 +11,16 @@ int main(int argc, char **argv)
 {
 	LIKWID_MARKER_THREADINIT;
 }
-	
-	LIKWID_MARKER_INIT;	
+
+	LIKWID_MARKER_INIT;
 
 	srand(0);
-	
+
 	Game g(atoi(argv[1]));
-	
+
 	//g.init("Glider gun");
 	g.init(0.25);
-	
+
 	for(long i = 0; i < 777 ; ++i)
 	{
 		/*g.print();*/
@@ -59,7 +38,7 @@ int main(int argc, char **argv)
 		// 	[numberC - move cursor right number chars
 		// 	[numberD - move cursor left number chars
 		// 	H - upper left corner
-		
+
 		/*cout << flushStream.str() << flush;
 		usleep(75000);*/
 	}
