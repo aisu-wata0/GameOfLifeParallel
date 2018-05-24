@@ -1,6 +1,7 @@
 
 #compiler
-CC = g++ -std=c++11
+#CC = g++ -std=c++11
+CC = mpicc -std=c++11
 EXT := cpp
 HEXT := hpp
 # Executable filename
@@ -67,6 +68,12 @@ set_debug:
 assembly: set_assembly all
 set_assembly:
 	$(eval CFLAGS = -S $(CFLAGS))
+	
+
+run: all
+	echo "USAGE: make run NTHREADS=4"
+	echo "Invoking MPI with " $(NTHREADS) " threads"
+	mpirun --hostfile hostfile.txt -np $(NTHREADS) ./t.exe
 
 rebuild: clean all
 
