@@ -1,7 +1,7 @@
 
 #compiler
 #CC = g++ -std=c++11
-CC = mpicc -std=c++11
+CC = mpicc -std=c++17
 EXT := cpp
 HEXT := hpp
 # Executable filename

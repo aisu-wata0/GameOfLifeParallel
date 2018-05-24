@@ -17,8 +17,6 @@ namespace G {
 
 using namespace std;
 
-#define LIVE 1
-#define DEAD 0
 
 #define LIVE_CHAR 'O'
 #define DEAD_CHAR '.'

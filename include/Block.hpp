@@ -2,6 +2,9 @@
 
 #include "MPI.hpp"
 
+#define LIVE 1
+#define DEAD 0
+
 // Neighbours
 class Neigh {
 public:
@@ -53,6 +56,7 @@ public:
 
 	Block (int height, int width, int rowD, int colD, int workerID)
 		: Neigh()
+		, workerID(workerID)
 
 		, rows(height / rowD), cols(width / colD)
 	// Bounds of what should be processed, existance of neighbours expand bounds
@@ -61,7 +65,6 @@ public:
 
 		, rows_m(rows+2), cols_m(cols+2)
 
-		, workerID(workerID)
 	// calculate position of this block in the global matrix
 		, rowStart((workerID / colD) * rows), colStart((workerID % colD) * cols)
 	// allocate local matrices
@@ -70,8 +73,6 @@ public:
 	{
 		if (src == NULL || dst == NULL) {
 			std::cerr << "Not enough memory" << std::endl;
-			MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-			return EXIT_FAILURE;
 		}
 	// Neighbours
 		// not at the north border
@@ -116,15 +117,15 @@ public:
 				north, STD_TAG, MPI_COMM_WORLD, &reqRecvNorth);
 		}
 		if (south != -1) { // send my south row
-			if(LOG && workerID == logWorkerID) printf("S trade start\n");
-			MPI_Isend(&(*this)[block.rows][1], 1, row_t,
+			if(LOG && workerID == logWorkerID) printf("South trade start\n");
+			MPI_Isend(&(*this)[rows][1], 1, row_t,
 				south, STD_TAG, MPI_COMM_WORLD, &reqSendSouth);
 			// request border
-			MPI_Irecv(&(*this)[block.rows+1][1], 1, row_t,
+			MPI_Irecv(&(*this)[rows+1][1], 1, row_t,
 				south, STD_TAG, MPI_COMM_WORLD, &reqRecvSouth);
 		}
 		if (west != -1) { // send my west col
-			if(LOG && workerID == logWorkerID) printf("W trade start\n");
+			if(LOG && workerID == logWorkerID) printf("West trade start\n");
 			MPI_Isend(&(*this)[1][1], 1, column_t,
 				 west, STD_TAG, MPI_COMM_WORLD, &reqSendWest);
 			// request his border
@@ -132,11 +133,11 @@ public:
 				 west, STD_TAG, MPI_COMM_WORLD, &reqRecvWest);
 		}
 		if (east != -1) { // send my east col
-			if(LOG && workerID == logWorkerID) printf("E trade start\n");
-			MPI_Isend(&(*this)[1][block.cols], 1, column_t,
+			if(LOG && workerID == logWorkerID) printf("East trade start\n");
+			MPI_Isend(&(*this)[1][cols], 1, column_t,
 				  east, STD_TAG, MPI_COMM_WORLD, &reqSendEast);
 			// request his border
-			MPI_Irecv(&(*this)[1][block.cols+1], 1, column_t,
+			MPI_Irecv(&(*this)[1][cols+1], 1, column_t,
 				east, STD_TAG, MPI_COMM_WORLD, &reqRecvEast);
 		}
 		// TODO: Corners
@@ -166,21 +167,21 @@ public:
 		
 		number_t neib = value;
 		
-		if(cell(i,j) == LIVE)
+		if(cell(x,y) == LIVE)
 		{
 			if(neib < 2 || neib > 3)
 			{
-				cellTmp(i,j) = DEAD;
+				cellTmp(x,y) = DEAD;
 			} else {
-				cellTmp(i,j) = LIVE;
+				cellTmp(x,y) = LIVE;
 			}
 		}
-		else // if cell(i,j) == DEAD
+		else // if cell(x,y) == DEAD
 		{
 			if(neib == 3) {
-				cellTmp(i,j) = LIVE;
+				cellTmp(x,y) = LIVE;
 			} else {
-				cellTmp(i,j) = DEAD;
+				cellTmp(x,y) = DEAD;
 			}
 		}
 	}
@@ -192,7 +193,6 @@ public:
 	}
 
 	inline void convoluteLocal(number_t filter[CONVN][CONVN]){
-	//  convolute(*src,*dst, rowMin, rowMax, colMin, colMax, cols_m, **filter)
 		convolute(2, rows-1,    2, cols-1,  filter);
 	}
 
@@ -271,9 +271,9 @@ public:
 	}
 
 	void print(){
-		for(int i = rowMin; i <= rowMax; ++i){
-			for(int j = colMin; j <= colMax; ++j){
-				std::cout << block[i][j]) << " ";
+		for(int i = 1; i <= rows; ++i){
+			for(int j = 1; j <= cols; ++j){
+				std::cout << (*this)[i][j] << " ";
 			}
 			std::cout << std::endl;
 		}

@@ -34,9 +34,10 @@ int divideBlocks(int rows, int cols, int nWorkers) {
 
 int main(int argc, char **argv)
 {
-	const int loops = 777;
-	const int size = atoi(argv[1]);
-	const float prob = atof(argv[2]);
+	int loops = 777;
+	int size = atoi(argv[1]);
+	int width = size, height = size;
+	float prob = atof(argv[2]);
 	
 	omp_set_num_threads(4);
 // Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
@@ -52,9 +53,6 @@ int main(int argc, char **argv)
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &nWorkers);
 	MPI_Comm_rank(MPI_COMM_WORLD, &workerID);
-
-	MPI_Status status;
-
 
 	srand(0);
 	
@@ -142,17 +140,15 @@ int main(int argc, char **argv)
 	}
 
 /**/
-	Game g;
+	Game *g;
 	
 	if (workerID == masterID) {
 		g = new Game(size);
-		g.init(prob);
+		g->init(prob);
 	}
 
-	//g.init("Glider gun");
-
 /**/
-	MPI_Scatterv(&g.cell(0,0), counts, displs, submatrix_t,
+	MPI_Scatterv(&g->cell(0,0), counts, displs, submatrix_t,
 		&block[1][1], 1, block_t,
 		0, MPI_COMM_WORLD);
 /**/
@@ -165,7 +161,7 @@ int main(int argc, char **argv)
 	}
 	
 // Filter
-	double filter[CONVN][CONVN] = {{1,1,1},{1,0,1},{1,1,1}};
+	char filter[CONVN][CONVN] = {{1,1,1},{1,0,1},{1,1,1}};
 //	double totalWeight = 0;
 //	for(int i = 0; i < CONVN; ++i)
 //		for(int j = 0; j < CONVN; ++j)
@@ -196,9 +192,6 @@ int main(int argc, char **argv)
 	/**/
 	// Wait remotes and compute borders
 		block.convoluteBorders(filter);
-	/**/
-		double maxDelta = block.maxDelta();
-		if(LOG && workerID == logWorkerID) printf("max delta = %lf\n", maxDelta);
 	/**/
 	// Wait borders
 		block.waitSendBorders();
@@ -239,14 +232,14 @@ int main(int argc, char **argv)
 	}
 
 	MPI_Gatherv(&block[1][1], 1,  block_t,
-			&g.cell(0,0), counts, displs, submatrix_t,
+			&g->cell(0,0), counts, displs, submatrix_t,
 			0, MPI_COMM_WORLD);
 
 /**/
 // Print Matrix
 //  if(LOG)
 	if(workerID == masterID){
-		g.print();
+		g->print();
 	}
 /**/
 // Poll max timeElapsed
