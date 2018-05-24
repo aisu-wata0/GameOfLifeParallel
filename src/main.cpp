@@ -208,9 +208,72 @@ int main(int argc, char **argv)
 
 		if(LOG) printf("worker %d: end loop: %d;\n", workerID, t);
 	}
+// Loop End
+
+
+/**/
+	if(workerID == masterID) printf("%d iterations\n", t);
+	// if(LOG && workerID == logWorkerID) {
+	//  block.print();
+	// }
+/**
+// Print local finished matrices in worker order
+	if(LOG)
+	for (int p=0; p<nWorkers; p++) {
+		if (workerID == p) {
+			printf("Local process on workerID %d is:\n", workerID);
+			for (int i=1; i<=size/sizeD; i++) {
+				for (int j=1; j<=size/sizeD; j++) {
+					printf("%.0lf ", block[i][j]);
+				}
+				printf("\n");
+			}
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+/**/
+// Gather matrix
+	double *EndMatrix;
+	if(workerID == masterID){
+		EndMatrix = (double*)malloc(height*width  * sizeof(double));
+	}
+
+	MPI_Gatherv(&block[1][1], 1,  block_t,
+			&g.cell(0,0), counts, displs, submatrix_t,
+			0, MPI_COMM_WORLD);
+
+/**/
+// Print Matrix
+//  if(LOG)
+	if(workerID == masterID){
+		g.print();
+	}
+/**/
+// Poll max timeElapsed
+	double timeElapsed = MPI_Wtime() - timeStart;
+
+	if(LOG && workerID == logWorkerID) printf("Reducing timeElapsed\n");
+
+	double timeElapsedGlobal;
+	MPI_reduce(&timeElapsed, &timeElapsedGlobal, 1,
+		MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+	if (workerID != masterID) {
+	//  if(LOG)
+		printf("timeElapsed %f\n", timeElapsedGlobal);
+	}
 	
-	g.nextGenMPI(loops);
+/**/
+	
+// Free memory
+	MPI_Type_free(&column_t);
+	MPI_Type_free(&row_t);
+	MPI_Type_free(&block_t);
+	MPI_Type_free(&submatrix_t);
+/**/
+	MPI_Finalize();
 
 LIKWID_MARKER_CLOSE;
-	return(0);
+
+	return(EXIT_SUCCESS);
 }
