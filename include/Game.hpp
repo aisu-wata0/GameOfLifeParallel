@@ -25,14 +25,17 @@ using namespace std;
 
 class Game
 {
-private:
+public:
 	long size_;
 	long sizeMem_;
 	vector<char> grid_;
 	vector<char> temp_;
 
-public:
-
+	// Empty constructor
+	Game()
+	{
+	}
+	
 	Game(long size)
 	{
 LIKWID_MARKER_START("SEQUENTIAL");

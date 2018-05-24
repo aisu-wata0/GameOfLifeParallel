@@ -38,15 +38,18 @@ public:
 	int rowStart, colStart;
 
 	// MPI requests
-	MPI_Request reqSendNorth;
-	MPI_Request reqSendSouth;
-	MPI_Request reqSendWest;
-	MPI_Request reqSendEast;
-	/* add Corners if necessary */
-	MPI_Request reqRecvNorth;
-	MPI_Request reqRecvSouth;
-	MPI_Request reqRecvWest;
-	MPI_Request reqRecvEast;
+		// send
+	MPI_Request reqSendNorth, reqSendSouth;
+	MPI_Request reqSendWest, reqSendEast;
+	// corners
+	MPI_Request reqSendNorthwest, reqSendSouthwest;
+	MPI_Request reqSendNortheast, reqSendSoutheast;
+		// recv
+	MPI_Request reqRecvNorth, reqRecvSouth;
+	MPI_Request reqRecvWest, reqRecvEast;
+	// corners
+	MPI_Request reqRecvNorthwest, reqRecvSouthwest;
+	MPI_Request reqRecvNortheast, reqRecvSoutheast;
 
 	Block (int height, int width, int rowD, int colD, int workerID)
 		: Neigh()
@@ -103,22 +106,7 @@ public:
 		}
 	}
 
-	number_t maxDelta(){
-		number_t maxDelta
-			= abs(src[(rowMin)*cols_m + colMin] - dst[(rowMin)*cols_m + colMin]);
-
-		for(int i = rowMin ; i <= rowMax; ++i){
-			for(int j = colMin ; j <= colMax ; ++j){
-				number_t delta = fabs(src[(i)*cols_m + j] - dst[(i)*cols_m + j]);
-				if(delta > maxDelta){
-					maxDelta = delta;
-				}
-			}
-		}
-		return maxDelta;
-	}
-
-	void tradeBorders(){
+	inline void tradeBorders(){
 		if (north != -1) { // send my north row
 			if(LOG && workerID == logWorkerID) printf("North trade start\n");
 			MPI_Isend(&(*this)[1][1], 1, row_t,
@@ -166,29 +154,49 @@ public:
 			// receive his corner pixel
 		}
 	}
+	
 	// Applies filter to a single element on position x,y
-	void convoluteElem(int x, int y, int cols_m, number_t filter[CONVN][CONVN]) {
+	inline void convoluteElem(int x, int y, int cols_m, number_t filter[CONVN][CONVN]) {
 		number_t value = 0;
 		for (int i = x-1, k=0;   i <= x+1;   ++i, ++k){
 			for (int j = y-1, l=0;   j <= y+1;   ++j, ++l){
 				value += (*this)[i][j] * filter[k][l];
 			}
 		}
-		at_dst(x, y) = value;
+		
+		number_t neib = value;
+		
+		if(cell(i,j) == LIVE)
+		{
+			if(neib < 2 || neib > 3)
+			{
+				cellTmp(i,j) = DEAD;
+			} else {
+				cellTmp(i,j) = LIVE;
+			}
+		}
+		else // if cell(i,j) == DEAD
+		{
+			if(neib == 3) {
+				cellTmp(i,j) = LIVE;
+			} else {
+				cellTmp(i,j) = DEAD;
+			}
+		}
 	}
 
-	void convolute(int rowMin, int rowMax, int colMin, int colMax, number_t filter[CONVN][CONVN]) {
+	inline void convolute(int rowMin, int rowMax, int colMin, int colMax, number_t filter[CONVN][CONVN]) {
 		for(int i = rowMin ; i <= rowMax; ++i)
 			for(int j = colMin ; j <= colMax ; ++j)
 				convoluteElem(i, j, filter);
 	}
 
-	void convoluteLocal(number_t filter[CONVN][CONVN]){
+	inline void convoluteLocal(number_t filter[CONVN][CONVN]){
 	//  convolute(*src,*dst, rowMin, rowMax, colMin, colMax, cols_m, **filter)
 		convolute(2, rows-1,    2, cols-1,  filter);
 	}
 
-	void convoluteBorders(number_t filter[CONVN][CONVN]){
+	inline void convoluteBorders(number_t filter[CONVN][CONVN]){
 		MPI_Status status;
 		if (north != -1) {
 			if(LOG && workerID == logWorkerID) printf("north Wait recv\n");
@@ -214,7 +222,7 @@ public:
 		convoluteCorners(filter);
 	}
 
-	void convoluteCorners(number_t filter[CONVN][CONVN]){
+	inline void convoluteCorners(number_t filter[CONVN][CONVN]){
 		if (northwest != -1){
 			// if(LOG && workerID == logWorkerID) printf("northwest Wait recv\n");
 			// MPI_Wait(&reqRecvNorthwest, &status);
@@ -241,7 +249,7 @@ public:
 		}
 	}
 
-	void waitSendBorders(){
+	inline void waitSendBorders(){
 		MPI_Status status;
 		if (north != -1){
 			if(LOG && workerID == logWorkerID) printf("N Wait send\n");
@@ -273,6 +281,14 @@ public:
 
 	void swapPointers(){
 		src.swap(dst);
+	}
+	
+	inline char& cell(long i, long j){
+		return (*this)[i][j];
+	}
+	
+	inline char& cellTmp(long i, long j){
+		return at_dst(i,j);
 	}
 
 	number_t & at_dst(int i, int j){

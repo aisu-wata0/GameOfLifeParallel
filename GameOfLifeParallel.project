@@ -29,9 +29,7 @@
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
-    <File Name="src/Game.h"/>
     <File Name="src/main.cpp"/>
-    <File Name="src/Block.hpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="root">
     <File Name=".gitignore"/>
@@ -39,6 +37,7 @@
     <File Name="GameOfLifeParallel.project"/>
     <File Name="LICENSE"/>
     <File Name="Makefile"/>
+    <File Name="convMPI.cpp"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -143,4 +142,10 @@
       </Completion>
     </Configuration>
   </Settings>
+  <VirtualDirectory Name="include">
+    <File Name="include/Block.hpp"/>
+    <File Name="include/Game.hpp"/>
+    <File Name="include/main.hpp"/>
+    <File Name="include/MPI.hpp"/>
+  </VirtualDirectory>
 </CodeLite_Project>
