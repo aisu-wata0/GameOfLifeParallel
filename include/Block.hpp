@@ -140,19 +140,42 @@ public:
 			MPI_Irecv(&(*this)[1][cols+1], 1, column_t,
 				east, STD_TAG, MPI_COMM_WORLD, &reqRecvEast);
 		}
-		// TODO: Corners
+
+		tradeCorners();
+	}
+
+	inline void tradeCorners(){
 		if (northwest != -1) { // send my corner pixel
-			// receive his corner pixel
+			if(LOG && workerID == logWorkerID) printf("Northwest trade start\n");
+			MPI_Isend(&(*this)[1][1], 1, MPI_CHAR,
+				northwest, STD_TAG, MPI_COMM_WORLD, &reqSendNorthwest);
+			// request his border
+			MPI_Irecv(&(*this)[0][0], 1, MPI_CHAR,
+				northwest, STD_TAG, MPI_COMM_WORLD, &reqRecvNorthwest);
 		}
 		if (southwest != -1) { // send my corner pixel
-			// receive his corner pixel
+			if(LOG && workerID == logWorkerID) printf("Southwest trade start\n");
+			MPI_Isend(&(*this)[rows][1], 1, MPI_CHAR,
+				southwest, STD_TAG, MPI_COMM_WORLD, &reqSendSouthwest);
+			// request his border
+			MPI_Irecv(&(*this)[rows+1][0], 1, MPI_CHAR,
+				southwest, STD_TAG, MPI_COMM_WORLD, &reqRecvSouthwest);
 		}
-		// Corners
 		if (northeast != -1) { // send my corner pixel
-			// receive his corner pixel
+			if(LOG && workerID == logWorkerID) printf("Northeast trade start\n");
+			MPI_Isend(&(*this)[1][cols], 1, MPI_CHAR,
+				northeast, STD_TAG, MPI_COMM_WORLD, &reqSendNortheast);
+			// request his border
+			MPI_Irecv(&(*this)[0][cols+1], 1, MPI_CHAR,
+				northeast, STD_TAG, MPI_COMM_WORLD, &reqRecvNortheast);
 		}
 		if (southeast != -1) { // send my corner pixel
-			// receive his corner pixel
+			if(LOG && workerID == logWorkerID) printf("Southeast trade start\n");
+			MPI_Isend(&(*this)[rows][cols], 1, MPI_CHAR,
+				southeast, STD_TAG, MPI_COMM_WORLD, &reqSendSoutheast);
+			// request his border
+			MPI_Irecv(&(*this)[rows+1][cols+1], 1, MPI_CHAR,
+				southeast, STD_TAG, MPI_COMM_WORLD, &reqRecvSoutheast);
 		}
 	}
 
@@ -198,6 +221,7 @@ public:
 
 	inline void convoluteBorders(number_t filter[CONVN][CONVN]){
 		MPI_Status status;
+
 		if (north != -1) {
 			if(LOG && workerID == logWorkerID) printf("north Wait recv\n");
 			MPI_Wait(&reqRecvNorth, &status);
@@ -223,60 +247,87 @@ public:
 	}
 
 	inline void convoluteCorners(number_t filter[CONVN][CONVN]){
+		MPI_Status status;
+
 		if (northwest != -1){
-			// if(LOG && workerID == logWorkerID) printf("northwest Wait recv\n");
-			// MPI_Wait(&reqRecvNorthwest, &status);
+			if(LOG && workerID == logWorkerID) printf("northwest Wait recv\n");
+			MPI_Wait(&reqRecvNorthwest, &status);
 			convolute(1, 1, 1, 1, filter);
-			if(LOG && workerID == logWorkerID) printf("nw\n");
 		}
 		if (southwest != -1){
-			// if(LOG && workerID == logWorkerID) printf("southwest Wait recv\n");
-			// MPI_Wait(&reqRecvSouthwest, &status);
+			if(LOG && workerID == logWorkerID) printf("southwest Wait recv\n");
+			MPI_Wait(&reqRecvSouthwest, &status);
 			convolute(rows, rows, 1, 1, filter);
-			if(LOG && workerID == logWorkerID) printf("sw\n");
 		}
 		if (northeast != -1){
-			// if(LOG && workerID == logWorkerID) printf("northeast Wait recv\n");
-			// MPI_Wait(&reqRecvNortheast, &status);
+			if(LOG && workerID == logWorkerID) printf("northeast Wait recv\n");
+			MPI_Wait(&reqRecvNortheast, &status);
 			convolute(1, 1, cols, cols, filter);
-			if(LOG && workerID == logWorkerID) printf("ne\n");
 		}
 		if (southeast != -1){
-			// if(LOG && workerID == logWorkerID) printf("southeast Wait recv\n");
-			// MPI_Wait(&reqRecvSoutheast, &status);
+			if(LOG && workerID == logWorkerID) printf("southeast Wait recv\n");
+			MPI_Wait(&reqRecvSoutheast, &status);
 			convolute(rows, rows, cols, cols, filter);
-			if(LOG && workerID == logWorkerID) printf("se\n");
 		}
 	}
 
 	inline void waitSendBorders(){
 		MPI_Status status;
+
 		if (north != -1){
-			if(LOG && workerID == logWorkerID) printf("N Wait send\n");
+			if(LOG && workerID == logWorkerID) printf("North Wait send\n");
 			MPI_Wait(&reqSendNorth, &status);
 		}
 		if (south != -1){
-			if(LOG && workerID == logWorkerID) printf("S Wait send\\n");
+			if(LOG && workerID == logWorkerID) printf("South Wait send\\n");
 			MPI_Wait(&reqSendSouth, &status);
 		}
 		if (west != -1){
-			if(LOG && workerID == logWorkerID) printf("W Wait send\\n");
+			if(LOG && workerID == logWorkerID) printf("West Wait send\\n");
 			MPI_Wait(&reqSendWest, &status);
 		}
 		if (east != -1){
-			if(LOG && workerID == logWorkerID) printf("E Wait send\\n");
+			if(LOG && workerID == logWorkerID) printf("East Wait send\\n");
 			MPI_Wait(&reqSendEast, &status);
 		}
-		// TODO: Wait corners
+
+		waitSendCorners();
+	}
+
+	inline void waitSendCorners(){
+		MPI_Status status;
+
+		if (northwest != -1){
+			if(LOG && workerID == logWorkerID) printf("northwest Wait send\n");
+			MPI_Wait(&reqSendNorthwest, &status);
+		}
+		if (southwest != -1){
+			if(LOG && workerID == logWorkerID) printf("southwest Wait send\\n");
+			MPI_Wait(&reqSendSouthwest, &status);
+		}
+		if (northeast != -1){
+			if(LOG && workerID == logWorkerID) printf("northeast Wait send\\n");
+			MPI_Wait(&reqSendNortheast, &status);
+		}
+		if (southeast != -1){
+			if(LOG && workerID == logWorkerID) printf("southeast Wait send\\n");
+			MPI_Wait(&reqSendSoutheast, &status);
+		}
 	}
 
 	void print(){
 		for(int i = 1; i <= rows; ++i){
+			std::cout << "|";
 			for(int j = 1; j <= cols; ++j){
-				std::cout << (*this)[i][j] << " ";
+				// std::cout << std::setw(2) << (int)(*this)[i][j] << "  ";
+				if((*this)[i][j] == LIVE)
+					std::cout << "O";
+				else
+					std::cout << ".";
 			}
-			std::cout << std::endl;
+			std::cout << "|\n";
 		}
+		std::cout << std::flush;
 	}
 
 	void swapPointers(){

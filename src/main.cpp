@@ -34,10 +34,10 @@ int divideBlocks(int rows, int cols, int nWorkers) {
 
 int main(int argc, char **argv)
 {
-	int loops = 777;
+	int loops = 1;
 	int size = atoi(argv[1]);
 	int width = size, height = size;
-	float prob = atof(argv[2]);
+	float chanceAlive = atof(argv[2]);
 
 	LIKWID_MARKER_INIT;
 
@@ -48,17 +48,23 @@ int main(int argc, char **argv)
 
 	srand(0);
 
-
 	int rowD, colD;
 	if (workerID == masterID) {
+		if(LOG)
+		{
+		std::cout << "loops=" << loops << std::endl;
+		std::cout << "nWorkers=" << nWorkers << std::endl;
+		std::cout << "height=" << height << std::endl;
+		std::cout << "width=" << width << std::endl;
+		}
 		//parseArgs(argc, argv, &filename, &width, &height, &loops);
 // Each worker has a block
 // The matrix is decomposed into a matrix of rowD * colD blocks
 // rowD * colD == # of workers == # of blocks
 // each block has rowsB * colsB elements
-// 0 1 2    // where the numbers are enumerated blocks (same as workerID)
-// 3 4 5    // colD = 3, 3 columns of blocks
-// 6 7 8    // if workerID = 4, the north worker is 4 - colD = 1
+// 0 1 2	// where the numbers are enumerated blocks (same as workerID)
+// 3 4 5	// colD = 3, 3 columns of blocks
+// 6 7 8	// if workerID = 4, the north worker is 4 - colD = 1
 		rowD = divideBlocks(height, width, nWorkers);
 
 		if(rowD == 0){
@@ -71,8 +77,8 @@ int main(int argc, char **argv)
 
 		if(LOG)
 		{
-			printf("loops = %d; rowD = %d; colD = %d\n", loops, rowD, colD);
-			printf("nWorkers = %d;\n", nWorkers);
+			std::cout << "rowD=" << rowD << std::endl;
+			std::cout << "colD=" << colD << std::endl;
 		}
 	}
 /**
@@ -83,12 +89,13 @@ int main(int argc, char **argv)
 /**/
 // Broadcast parameters
 	// MPI_Bcast(&filename, strlen(filename)+1, MPI_CHAR, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&width, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&height, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&loops, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&rowD, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&colD, 1, MPI_INT, 0, MPI_COMM_WORLD);
 /**/
-	Block<char> block(size, size, rowD, colD, workerID);
+	Block<char> block(height, width, rowD, colD, workerID);
 
 // Memory size of block
 // block's first & last lines are the borders handled by other workers
@@ -124,26 +131,68 @@ int main(int argc, char **argv)
 		if (workerID == 0) {
 			for (int i=0; i<rowD; i++) {
 				for (int j=0; j<colD; j++) {
-					displs[i*colD+j] = i*block.rows*colD  +  j;
 					counts[i*colD+j] = 1;
+					displs[i*colD+j] = i*block.rows*colD  +  j;
 				}
 			}
 		}
 	}
 
-/**/
+/**
 	Game *g;
 
 	if (workerID == masterID) {
 		g = new Game(size);
-		g->init(prob);
+		g->init(chanceAlive);
+		g->print();
+	} else {
+		g = new Game(1);
 	}
-
-/**/
 	MPI_Scatterv(&g->cell(0,0), counts, displs, submatrix_t,
 		&block[1][1], 1, block_t,
-		0, MPI_COMM_WORLD);
+		masterID, MPI_COMM_WORLD);
 /**/
+// Allocate global matrix
+	char *globalMatrix;
+	if(workerID == masterID){
+		globalMatrix = (char*)malloc(height*width * sizeof(char));
+	}
+// Initialize it
+	//#pragma omp for schedule(static)
+	for(long i = 0; i < height; ++i)
+	{
+		for(long j = 0; j < width; ++j)
+		{
+			// globalMatrix[i*width + j] = (char)((i*width +j) % 99);
+			double val = (double)rand() / RAND_MAX;
+			if (val < chanceAlive)
+				globalMatrix[i*width + j] = LIVE;
+			else
+				globalMatrix[i*width + j] = DEAD;
+		}
+	}
+
+	for(long i = 0; i < height; ++i)
+	{
+		std::cout << "|";
+		for(long j = 0; j < width; ++j)
+		{
+			// std::cout << std::setw(2) << (int)(*this)[i][j] << "  ";
+			if(globalMatrix[i*width + j] == LIVE)
+				std::cout << "O";
+			else
+				std::cout << ".";
+		}
+		std::cout << "|\n";
+	}
+	std::cout << std::flush;
+/**/
+	MPI_Scatterv(&globalMatrix[0], counts, displs, submatrix_t,
+		&block[1][1], 1, block_t,
+		masterID, MPI_COMM_WORLD);
+/**/
+
+
 	if(LOG && workerID == logWorkerID){
 		printf("max loops = %d;\n", loops);
 		printf("block.rows = %d; block.cols = %d;\n", block.rows, block.cols);
@@ -152,6 +201,16 @@ int main(int argc, char **argv)
 		printf("west = %d; east = %d;\n", block.west, block.east);
 	}
 
+	{
+		MPI_Barrier(MPI_COMM_WORLD);
+		for (int p=0; p<nWorkers; p++) {
+			if (workerID == p) {
+				printf("Local process on workerID %d is:\n", workerID);
+				block.print();
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
 // Filter
 	char filter[CONVN][CONVN] = {{1,1,1},{1,0,1},{1,1,1}};
 //	double totalWeight = 0;
@@ -201,38 +260,24 @@ int main(int argc, char **argv)
 	// if(LOG && workerID == logWorkerID) {
 	//  block.print();
 	// }
-/**
+/**/
 // Print local finished matrices in worker order
-	if(LOG)
-	for (int p=0; p<nWorkers; p++) {
-		if (workerID == p) {
-			printf("Local process on workerID %d is:\n", workerID);
-			for (int i=1; i<=size/sizeD; i++) {
-				for (int j=1; j<=size/sizeD; j++) {
-					printf("%.0lf ", block[i][j]);
-				}
-				printf("\n");
-			}
-		}
+//	if(LOG)
+	{
 		MPI_Barrier(MPI_COMM_WORLD);
+		for (int p=0; p<nWorkers; p++) {
+			if (workerID == p) {
+				printf("Local process on workerID %d is:\n", workerID);
+				block.print();
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
 	}
 /**/
 // Gather matrix
-	double *EndMatrix;
-	if(workerID == masterID){
-		EndMatrix = (double*)malloc(height*width  * sizeof(double));
-	}
-
 	MPI_Gatherv(&block[1][1], 1,  block_t,
-			&g->cell(0,0), counts, displs, submatrix_t,
-			0, MPI_COMM_WORLD);
-
-/**/
-// Print Matrix
-//  if(LOG)
-	if(workerID == masterID){
-		g->print();
-	}
+			&globalMatrix[0], counts, displs, submatrix_t,
+			masterID, MPI_COMM_WORLD);
 /**/
 // Poll max timeElapsed
 	double timeElapsed = MPI_Wtime() - timeStart;
@@ -241,15 +286,31 @@ int main(int argc, char **argv)
 
 	double timeElapsedGlobal;
 	MPI_Reduce(&timeElapsed, &timeElapsedGlobal, 1,
-		MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+		MPI_DOUBLE, MPI_MAX, masterID, MPI_COMM_WORLD);
 
-	if (workerID != masterID) {
+	if (workerID == masterID) {
 	//  if(LOG)
 		printf("timeElapsed %f\n", timeElapsedGlobal);
 	}
 
 /**/
-
+// Print Matrix
+//  if(LOG)
+	if(workerID == masterID){
+		for(int i = 0; i < height; ++i){
+			std::cout << "|";
+			for(int j = 0; j < width; ++j){
+				std::cout << std::setw(2) << (int)globalMatrix[i*width + j] << "  ";
+				// if((*this)[i][j] == 1)
+				// 	std::cout << "O";
+				// else
+				// 	std::cout << ".";
+			}
+			std::cout << "|\n";
+		}
+		std::cout << std::flush;
+	}
+/**/
 // Free memory
 	MPI_Type_free(&column_t);
 	MPI_Type_free(&row_t);

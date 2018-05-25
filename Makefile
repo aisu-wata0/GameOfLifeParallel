@@ -71,9 +71,11 @@ set_assembly:
 
 
 run: all
-	echo "USAGE: make run SIZE=1024 CHANCE=0.25 NTHREADS=4"
+	# run: set_debug all
+	echo "USAGE: make run SIZE=16 CHANCE=0.15 NTHREADS=2"
 	echo "Invoking MPI with " $(NTHREADS) " threads"
 	mpirun --hostfile hostfile.txt -np $(NTHREADS) ./$(bin) $(SIZE) $(CHANCE)
+	# mpirun --hostfile hostfile.txt -np $(NTHREADS) valgrind --tool=memcheck --leak-check=yes --track-origins=yes --log-file=mem%p.log ./$(bin) $(SIZE) $(CHANCE)
 
 rebuild: clean all
 

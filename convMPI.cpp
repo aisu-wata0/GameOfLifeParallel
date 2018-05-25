@@ -461,6 +461,11 @@ int main(int argc, char** argv) {
 	}
 
 /**/
+// Allocate global matrix
+	double *globalMatrix;
+	if(workerID == masterID){
+		globalMatrix = (double*)malloc(height*width * sizeof(double));
+	}
 // Initialize Block
 	for(int i = 1; i <= block.rows; ++i){
 		if(block.colStart == 0){
@@ -608,13 +613,8 @@ int main(int argc, char** argv) {
 	}
 /**/
 // Gather matrix
-	double *EndMatrix;
-	if(workerID == masterID){
-		EndMatrix = (double*)malloc(height*width  * sizeof(double));
-	}
-
 	MPI_Gatherv(&block[1][1], 1,  block_t,
-				 EndMatrix, counts, displs, submatrix_t,
+				 globalMatrix, counts, displs, submatrix_t,
 				 0, MPI_COMM_WORLD);
 /**
 // Old way of gathering
@@ -622,8 +622,8 @@ int main(int argc, char** argv) {
 		MPI_Send(&block[1][1], 1, block_t, 0, 2, MPI_COMM_WORLD);
 	} else {
 	// Master
-		EndMatrix = malloc(width*height * sizeof(double));
-		copyMatrix(EndMatrix, width, rowStart, colStart, src, block.rows, block.cols);
+		globalMatrix = malloc(width*height * sizeof(double));
+		copyMatrix(globalMatrix, width, rowStart, colStart, src, block.rows, block.cols);
 		for (int i = 1 ; i != nWorkers ; ++i) {
 			MPI_Recv(&block[1][1], 1, block_t, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
 			int workerID = status.MPI_SOURCE;
@@ -635,7 +635,7 @@ if(LOG)
 	printf("rowStart = %d; colStart = %d;\n", rowStart, colStart);
 	block.print();
 }
-			copyMatrix(EndMatrix, width, rowStart, colStart, src, block.rows, block.cols);
+			copyMatrix(globalMatrix, width, rowStart, colStart, src, block.rows, block.cols);
 		}
 	}
 /**/
@@ -644,12 +644,12 @@ if(LOG)
 	if(workerID == masterID){
 		for(int i = 0; i < height; ++i){
 			for(int j = 0; j < width; ++j){
-				printf("%.0lf ", EndMatrix[i*width + j]);
+				printf("%.0lf ", globalMatrix[i*width + j]);
 			}
 			printf("\n");
 		}
 
-		//free(EndMatrix);
+		//free(globalMatrix);
 	}
 /**/
 // Poll max timeElapsed

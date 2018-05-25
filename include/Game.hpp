@@ -9,6 +9,7 @@
 #include <omp.h>
 #include <ctime>
 #include <cstdlib>
+#include <iomanip>
 
 
 #include "Block.hpp"
@@ -73,13 +74,17 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 	void print() const
 	{
 		for(long i = 0; i < size_; ++i){
-			for(long j = 0; j < size_; ++j)
-			{
-				cout << cell(i,j) << " ";
+			std::cout << "|";
+			for(int j = 0; j < size_; ++j){
+				std::cout << std::setw(2) << (int)cell(i,j) << "  ";
+				// if(cell(i,j) == 1)
+				// 	std::cout << "O";
+				// else
+				// 	std::cout << ".";
 			}
-			cout << "\n";
+			std::cout << "|\n";
 		}
-		cout << flush;
+		std::cout << std::flush;
 	}
 
 
@@ -197,21 +202,21 @@ LIKWID_MARKER_STOP("SEQUENTIAL");
 
 
 	void init(double chanceAlive){
-
-#pragma omp parallel
+//#pragma omp parallel
 {
 LIKWID_MARKER_START("Parallel");
 
-		#pragma omp for schedule(static)
+		//#pragma omp for schedule(static)
 		for(long i = 0; i < size_; ++i)
 		{
 			for(long j = 0; j < size_; ++j)
 			{
-				double val = (double)rand() / RAND_MAX;
-				if (val < chanceAlive)
-					cell(i,j) = LIVE;
-				else
-					cell(i,j) = DEAD;
+				cell(i,j) = (char)((i*size_+j) % 99);
+				// double val = (double)rand() / RAND_MAX;
+				// if (val < chanceAlive)
+				// 	cell(i,j) = LIVE;
+				// else
+				// 	cell(i,j) = DEAD;
 			}
 		}
 

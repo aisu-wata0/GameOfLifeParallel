@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <limits.h>
+#include <iomanip>
 
 
 #ifdef LIKWID_PERFMON
@@ -33,7 +34,7 @@
 
 #define masterID 0
 #define logWorkerID 0
-#define LOG 0
+#define LOG true
 
 // MPI
 int workerID, nWorkers;
