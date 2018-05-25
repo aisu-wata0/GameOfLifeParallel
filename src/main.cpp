@@ -38,16 +38,8 @@ int main(int argc, char **argv)
 	int size = atoi(argv[1]);
 	int width = size, height = size;
 	float prob = atof(argv[2]);
-	
-	omp_set_num_threads(4);
-// Marker tutorial https://github.com/RRZE-HPC/likwid/wiki/TutorialMarkerC
-#pragma omp parallel
-{
-	LIKWID_MARKER_THREADINIT;
-}
 
 	LIKWID_MARKER_INIT;
-
 
 	// MPI
 	MPI_Init(&argc, &argv);
@@ -55,8 +47,8 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &workerID);
 
 	srand(0);
-	
-	
+
+
 	int rowD, colD;
 	if (workerID == masterID) {
 		//parseArgs(argc, argv, &filename, &width, &height, &loops);
@@ -141,7 +133,7 @@ int main(int argc, char **argv)
 
 /**/
 	Game *g;
-	
+
 	if (workerID == masterID) {
 		g = new Game(size);
 		g->init(prob);
@@ -159,7 +151,7 @@ int main(int argc, char **argv)
 		printf("north = %d; south = %d;\n", block.north, block.south);
 		printf("west = %d; east = %d;\n", block.west, block.east);
 	}
-	
+
 // Filter
 	char filter[CONVN][CONVN] = {{1,1,1},{1,0,1},{1,1,1}};
 //	double totalWeight = 0;
@@ -248,16 +240,16 @@ int main(int argc, char **argv)
 	if(LOG && workerID == logWorkerID) printf("Reducing timeElapsed\n");
 
 	double timeElapsedGlobal;
-	MPI_reduce(&timeElapsed, &timeElapsedGlobal, 1,
+	MPI_Reduce(&timeElapsed, &timeElapsedGlobal, 1,
 		MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
 	if (workerID != masterID) {
 	//  if(LOG)
 		printf("timeElapsed %f\n", timeElapsedGlobal);
 	}
-	
+
 /**/
-	
+
 // Free memory
 	MPI_Type_free(&column_t);
 	MPI_Type_free(&row_t);

@@ -27,9 +27,6 @@ template<typename number_t>
 class Block : public Neigh {
 public:
 	int workerID;
-// Memory arrays
-	std::unique_ptr<number_t[]> src;
-	std::unique_ptr<number_t[]> dst;
 // Dimensions
 	int rows, cols;
 // Bounds of what should be processed, existance of neighbours change bounds
@@ -39,6 +36,9 @@ public:
 	int rows_m, cols_m;
 // Index of the first element of the block in the global matrix
 	int rowStart, colStart;
+// Memory arrays
+	std::unique_ptr<number_t[]> src;
+	std::unique_ptr<number_t[]> dst;
 
 	// MPI requests
 		// send
@@ -155,18 +155,18 @@ public:
 			// receive his corner pixel
 		}
 	}
-	
+
 	// Applies filter to a single element on position x,y
-	inline void convoluteElem(int x, int y, int cols_m, number_t filter[CONVN][CONVN]) {
+	inline void convoluteElem(int x, int y, number_t filter[CONVN][CONVN]) {
 		number_t value = 0;
 		for (int i = x-1, k=0;   i <= x+1;   ++i, ++k){
 			for (int j = y-1, l=0;   j <= y+1;   ++j, ++l){
 				value += (*this)[i][j] * filter[k][l];
 			}
 		}
-		
+
 		number_t neib = value;
-		
+
 		if(cell(x,y) == LIVE)
 		{
 			if(neib < 2 || neib > 3)
@@ -282,11 +282,11 @@ public:
 	void swapPointers(){
 		src.swap(dst);
 	}
-	
+
 	inline char& cell(long i, long j){
 		return (*this)[i][j];
 	}
-	
+
 	inline char& cellTmp(long i, long j){
 		return at_dst(i,j);
 	}
