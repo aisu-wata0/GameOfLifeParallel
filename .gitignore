@@ -1,6 +1,8 @@
 
 GameOfLifeParallel.txt
 Release/
+Debug/
+*.mk
 
 
 # Prerequisites

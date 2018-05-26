@@ -34,7 +34,7 @@
 
 #define masterID 0
 #define logWorkerID 0
-#define LOG true
+#define LOG false
 
 // MPI
 int workerID, nWorkers;

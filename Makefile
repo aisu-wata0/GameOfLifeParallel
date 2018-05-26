@@ -10,7 +10,7 @@ bin = GOL
 RELEASEFLAGS = -O3 -mavx -march=native -DNDEBUG
 DEBUGFLAGS = -O0 -g
 WARN = -Wall
-WNO = -Wno-comment  -Wno-sign-compare
+WNO = -Wno-comment  -Wno-sign-compare -Wmaybe-uninitialized
 CFLAGS = $(RELEASEFLAGS) $(WARN) $(WNO)
 
 LIKDIR=/usr/local/likwid
@@ -71,11 +71,11 @@ set_assembly:
 
 
 run: all
-	# run: set_debug all
+#run: set_debug all
 	echo "USAGE: make run SIZE=16 CHANCE=0.15 NTHREADS=2"
 	echo "Invoking MPI with " $(NTHREADS) " threads"
-	mpirun --hostfile hostfile.txt -np $(NTHREADS) ./$(bin) $(SIZE) $(CHANCE)
-	# mpirun --hostfile hostfile.txt -np $(NTHREADS) valgrind --tool=memcheck --leak-check=yes --track-origins=yes --log-file=mem%p.log ./$(bin) $(SIZE) $(CHANCE)
+	mpirun.openmpi --hostfile hostfile.txt -np $(NTHREADS) ./$(bin) $(SIZE) $(CHANCE)
+	#mpirun.openmpi --hostfile hostfile.txt -np $(NTHREADS) valgrind --tool=memcheck --leak-check=yes --track-origins=yes --log-file=mem%p.log ./$(bin) $(SIZE) $(CHANCE)
 
 rebuild: clean all
 
