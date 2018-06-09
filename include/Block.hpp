@@ -215,8 +215,28 @@ public:
 				convoluteElem(i, j, filter);
 	}
 
+	// convolute, but parallel
+	 inline void convolutePar(int rowMin, int rowMax, int colMin, int colMax, number_t filter[CONVN][CONVN]) {
+		#pragma omp parallel for
+		for(int i = rowMin ; i <= rowMax; ++i)
+			for(int j = colMin ; j <= colMax ; ++j)
+				convoluteElem(i, j, filter);
+	}
+    // convolutePar, but colMin == colMax
+	inline void convoluteParRow(int rowMin, int rowMax, int colMin, int colMax, number_t filter[CONVN][CONVN]) {
+		#pragma omp parallel for
+		for(int i = rowMin ; i <= rowMax; ++i)
+			convoluteElem(i, colMin, filter);
+	}
+    // convolutePar, but rowMin == rowMax
+	inline void convoluteParCol(int rowMin, int rowMax, int colMin, int colMax, number_t filter[CONVN][CONVN]) {
+		#pragma omp parallel for
+		for(int j = colMin ; j <= colMax ; ++j)
+			convoluteElem(rowMin, j, filter);
+	}
+
 	inline void convoluteLocal(number_t filter[CONVN][CONVN]){
-		convolute(2, rows-1,    2, cols-1,  filter);
+		convolutePar(2, rows-1,    2, cols-1,  filter);
 	}
 
 	inline void convoluteBorders(number_t filter[CONVN][CONVN]){
@@ -225,22 +245,22 @@ public:
 		if (north != -1) {
 			if(LOG && workerID == logWorkerID) printf("north Wait recv\n");
 			MPI_Wait(&reqRecvNorth, &status);
-			convolute(1, 1, 2, cols-1,  filter);
+			convoluteParCol(1, 1, 2, cols-1,  filter);
 		}
 		if (south != -1) {
 			if(LOG && workerID == logWorkerID) printf("south Wait recv\n");
 			MPI_Wait(&reqRecvSouth, &status);
-			convolute(rows, rows,   2, cols-1,  filter);
+			convoluteParCol(rows, rows,   2, cols-1,  filter);
 		}
 		if (west != -1) {
 			if(LOG && workerID == logWorkerID) printf("west Wait recv\n");
 			MPI_Wait(&reqRecvWest, &status);
-			convolute(2, rows-1,    1, 1,   filter);
+			convoluteParRow(2, rows-1,    1, 1,   filter);
 		}
 		if (east != -1) {
 			if(LOG && workerID == logWorkerID) printf("east Wait recv\n");
 			MPI_Wait(&reqRecvEast, &status);
-			convolute(2, rows-1,    cols, cols, filter);
+			convoluteParRow(2, rows-1,    cols, cols, filter);
 		}
 
 		convoluteCorners(filter);
